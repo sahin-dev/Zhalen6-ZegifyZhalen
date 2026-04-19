@@ -1,0 +1,25 @@
+model User {
+    id String @id @default(uuid())
+    full_name  String
+    avatar_url  String?
+    email      String @unique
+    phone      String @unique
+    address    String?
+    hashed_password   String 
+    is_blocked      Boolean @default(false)
+
+    products        Product[]
+    orders          Order[]
+    cart           Cart?
+    notifications Notification[]
+
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    role    UserRole  @default(BUYER)
+
+
+    @@map("users")
+    @@index([id, email])
+}
+

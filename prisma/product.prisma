@@ -1,0 +1,43 @@
+model Product {
+    id  String @id @default(uuid())
+    title String
+
+    description  String
+    price  Float
+    sizes  String
+    verified  Boolean @default(false)
+    brand_id        String
+    category_id     String
+    seller_id       String 
+    seller User @relation(references: [id], fields: [seller_id], onDelete: Restrict)
+    category  ProductCategory @relation(references: [id], fields: [category_id], onDelete: Restrict)
+    brand Brand @relation(references: [id], fields: [brand_id], onDelete: Restrict)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("products")
+    @@index([id, seller_id, category_id, brand_id])
+}
+
+model ProductCategory {
+    id  String @id @default(uuid())
+    title  String 
+    productId  String
+    products Product[]
+
+    craetedAt DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@map("product_categories")
+    @@index([id])
+}
+
+model Brand {
+    id String @id @default(uuid())
+    title String
+    image_url String?
+    products Product[]
+
+    @@map("brands")
+    @@index([id])
+}

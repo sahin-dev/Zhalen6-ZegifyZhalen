@@ -1,0 +1,33 @@
+model Order {
+    id String @id @default(uuid())
+    user_id  String
+    status OrderStatus @default(Pending)
+    total  Float
+
+    user  User @relation(references: [id], fields: [user_id], onDelete: Restrict)
+
+    items  OrderItem[]
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@map("orders")
+    @@index([id,user_id])
+}
+
+model OrderItem {
+
+    id  String @id @default(uuid())
+    order_id String
+    item_image  String?
+    item_title String
+    item_amount  String
+    item_quantity  String
+    
+    order  Order @relation(references: [id], fields: [order_id], onDelete:Restrict)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@map("order_items")
+    @@index([id, order_id])
+
+}
