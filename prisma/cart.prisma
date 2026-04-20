@@ -19,6 +19,7 @@ model CartItem {
     quantity  Int 
 
     cart Cart @relation(references: [id], fields: [cart_id], onDelete: Restrict)
+    product  Product  @relation(references:[id], fields:[product_id], onDelete: Restrict)
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt

@@ -1,17 +1,20 @@
 model Product {
     id  String @id @default(uuid())
     title String
-
     description  String
+    image_urls  String[]
     price  Float
     sizes  String
     verified  Boolean @default(false)
     brand_id        String
     category_id     String
     seller_id       String 
+
     seller User @relation(references: [id], fields: [seller_id], onDelete: Restrict)
     category  ProductCategory @relation(references: [id], fields: [category_id], onDelete: Restrict)
     brand Brand @relation(references: [id], fields: [brand_id], onDelete: Restrict)
+    cartItems  CartItem[]
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
@@ -22,7 +25,7 @@ model Product {
 model ProductCategory {
     id  String @id @default(uuid())
     title  String 
-    productId  String
+    icon String?
     products Product[]
 
     craetedAt DateTime @default(now())

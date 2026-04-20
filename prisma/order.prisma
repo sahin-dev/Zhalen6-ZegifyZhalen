@@ -1,7 +1,21 @@
+
+
+enum OrderStatus {
+  pending
+  accepted
+  cancelled
+  waiting_for_admin_approval
+  approved
+  rejected
+  completed
+
+}
+
+
 model Order {
     id String @id @default(uuid())
     user_id  String
-    status OrderStatus @default(Pending)
+    status OrderStatus @default(pending)
     total  Float
 
     user  User @relation(references: [id], fields: [user_id], onDelete: Restrict)
@@ -18,16 +32,31 @@ model OrderItem {
 
     id  String @id @default(uuid())
     order_id String
-    item_image  String?
+    item_image_urls  String[]
     item_title String
-    item_amount  String
+    item_category_name String
+    item_available_sizes  String
+    item_unit_price  Float
     item_quantity  String
-    
+
     order  Order @relation(references: [id], fields: [order_id], onDelete:Restrict)
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
 
     @@map("order_items")
+    @@index([id, order_id])
+
+}
+
+model OrderLog {
+    id  String  @id  @default(uuid())
+    order_id  String
+    title String
+
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime  @updatedAt
+
+    @@map("order_logs")
     @@index([id, order_id])
 
 }

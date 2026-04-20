@@ -6,6 +6,7 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  moduleFormat  = "cjs"
 }
 
 datasource db {
@@ -38,12 +39,6 @@ enum UserRole {
   SUPER_ADMIN
 }
 
-enum OrderStatus {
-  Pending
-  Completed
-  Cancelled
-
-}
 
 enum NotificationLevel {
   Critical

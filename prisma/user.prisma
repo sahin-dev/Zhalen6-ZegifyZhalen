@@ -1,3 +1,8 @@
+
+enum SellerDocumentType {
+    Business_License
+}
+
 model User {
     id String @id @default(uuid())
     full_name  String
@@ -23,3 +28,9 @@ model User {
     @@index([id, email])
 }
 
+
+
+model SellerDocument {
+    id  String @id  @default(uuid())
+    type SellerDocumentType
+}
