@@ -1,96 +1,109 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { CurrentUser, Roles } from '../../common/decorators';
+import { PaginationQueryDto } from '../../common/dtos';
+import {
+  CreateOrderDto,
+  CreateRefundDto,
+  ReviewRefundDto,
+  UpdateOrderStatusDto,
+} from './dto/create-order.dto';
 import { OrderService } from './order.service';
-import { CreateOrderDto, UpdateOrderStatusDto, ApproveOrderDto, RejectOrderDto } from './dto/create-order.dto';
-import { OrderResponseDto, OrderLogResponseDto, OrderStatsDto } from './dto/order-response.dto';
-import { PaginationQueryDto, PaginatedResponseDto } from '../../common/dtos';
-import { Public, Roles } from '../../common/decorators';
 
 @Controller('orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  @Post()
-  async createOrder(@Body() createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
-    return this.orderService.createOrder(createOrderDto);
+  @Post('checkout')
+  @Roles('BUYER')
+  checkout(@CurrentUser('sub') userId: string, @Body() dto: CreateOrderDto) {
+    return this.orderService.checkout(userId, dto);
   }
 
-  @Get()
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  async getAllOrders(
-    @Query() paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<OrderResponseDto>> {
-    return this.orderService.getAllOrders(paginationQuery);
+  @Post()
+  @Roles('BUYER')
+  checkoutCompatibility(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateOrderDto,
+  ) {
+    return this.orderService.checkout(userId, dto);
+  }
+
+  @Get('mine')
+  @Roles('BUYER', 'SELLER')
+  listMine(
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
+    @Query() query: PaginationQueryDto,
+    @Query('status') status?: string,
+  ) {
+    return this.orderService.listForUser(userId, role, query, status);
   }
 
   @Get('stats')
   @Roles('ADMIN', 'SUPER_ADMIN')
-  async getOrderStats(): Promise<OrderStatsDto> {
-    return this.orderService.getOrderStats();
+  stats() {
+    return this.orderService.getStats();
   }
 
-  @Get('pending')
+  @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
-  async getPendingOrders(
-    @Query() paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<OrderResponseDto>> {
-    return this.orderService.getPendingOrders(paginationQuery);
-  }
-
-  @Get('status/:status')
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  async getOrdersByStatus(
-    @Param('status') status: string,
-    @Query() paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<OrderResponseDto>> {
-    return this.orderService.getOrdersByStatus(status, paginationQuery);
-  }
-
-  @Get('user/:user_id')
-  async getOrdersByUserId(
-    @Param('user_id') user_id: string,
-    @Query() paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<OrderResponseDto>> {
-    return this.orderService.getOrdersByUserId(user_id, paginationQuery);
+  listAll(
+    @Query() query: PaginationQueryDto,
+    @Query('status') status?: string,
+  ) {
+    return this.orderService.listAll(query, status);
   }
 
   @Get(':id')
-  async getOrderById(@Param('id') id: string): Promise<OrderResponseDto> {
-    return this.orderService.getOrderById(id);
-  }
-
-  @Get(':id/logs')
-  async getOrderLogs(
+  getOne(
     @Param('id') id: string,
-    @Query() paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<OrderLogResponseDto>> {
-    return this.orderService.getOrderLogs(id, paginationQuery);
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
+  ) {
+    return this.orderService.getOne(id, userId, role);
   }
 
-  @Post(':id/approve')
-  async approveOrder(@Param('id') id: string, @Body() approveOrderDto: ApproveOrderDto): Promise<OrderResponseDto> {
-    return this.orderService.approveOrder(id, approveOrderDto);
-  }
-
-  @Post(':id/reject')
-  async rejectOrder(@Param('id') id: string, @Body() rejectOrderDto: RejectOrderDto): Promise<OrderResponseDto> {
-    return this.orderService.rejectOrder(id, rejectOrderDto);
-  }
-
-  @Put(':id/status')
-  async updateOrderStatus(
+  @Patch(':id/status')
+  @Roles('SELLER', 'ADMIN', 'SUPER_ADMIN')
+  setStatus(
     @Param('id') id: string,
-    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
-  ): Promise<OrderResponseDto> {
-    return this.orderService.updateOrderStatus(id, updateOrderStatusDto);
-  }
-
-  @Post(':id/complete')
-  async completeOrder(@Param('id') id: string): Promise<OrderResponseDto> {
-    return this.orderService.completeOrder(id);
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
+    @Body() dto: UpdateOrderStatusDto,
+  ) {
+    return this.orderService.setStatus(id, dto, userId, role);
   }
 
   @Post(':id/cancel')
-  async cancelOrder(@Param('id') id: string): Promise<OrderResponseDto> {
-    return this.orderService.cancelOrder(id);
+  @Roles('BUYER')
+  cancel(@Param('id') id: string, @CurrentUser('sub') userId: string) {
+    return this.orderService.cancel(id, userId);
+  }
+
+  @Post(':id/refund')
+  @Roles('BUYER')
+  refund(
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateRefundDto,
+  ) {
+    return this.orderService.requestRefund(id, userId, dto);
+  }
+
+  @Patch('refunds/:refundId')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  reviewRefund(
+    @Param('refundId') refundId: string,
+    @Body() dto: ReviewRefundDto,
+  ) {
+    return this.orderService.reviewRefund(refundId, dto);
   }
 }

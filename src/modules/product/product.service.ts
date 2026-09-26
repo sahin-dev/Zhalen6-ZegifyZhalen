@@ -1,22 +1,30 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationService } from '../../common/services/pagination.service';
-import { PaginationQueryDto, PaginatedResponseDto, MetaResponseDto } from '../../common/dtos';
+import { PaginationQueryDto, PaginatedResponseDto } from '../../common/dtos';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
-
+import type { Product } from '../../../generated/prisma/client';
 
 @Injectable()
 export class ProductService {
-    private readonly logger = new Logger(ProductService.name)
+  private readonly logger = new Logger(ProductService.name);
 
   constructor(
     private prisma: PrismaService,
     private paginationService: PaginationService,
   ) {}
 
-  async createProduct(createProductDto: CreateProductDto): Promise<ProductResponseDto> {
+  async createProduct(
+    sellerId: string,
+    createProductDto: CreateProductDto,
+  ): Promise<ProductResponseDto> {
     try {
       const product = await this.prisma.product.create({
         data: {
@@ -25,21 +33,29 @@ export class ProductService {
           image_urls: createProductDto.image_urls,
           price: createProductDto.price,
           sizes: createProductDto.sizes,
+          stock: createProductDto.stock,
+          verification_document_url: createProductDto.verification_document_url,
           brand_id: createProductDto.brand_id,
           category_id: createProductDto.category_id,
-          seller_id: createProductDto.seller_id,
+          seller_id: sellerId,
         },
       });
       return this.mapProductToDto(product);
     } catch (error) {
-      this.logger.error(error)
+      this.logger.error(error);
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to create product: ${message}`);
     }
   }
 
-  async updateProduct(id: string, updateProductDto: UpdateProductDto): Promise<ProductResponseDto> {
+  async updateProduct(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    userId: string,
+    role: string,
+  ): Promise<ProductResponseDto> {
     try {
+      await this.assertCanManage(id, userId, role);
       const product = await this.prisma.product.update({
         where: { id },
         data: {
@@ -48,6 +64,8 @@ export class ProductService {
           image_urls: updateProductDto.image_urls,
           price: updateProductDto.price,
           sizes: updateProductDto.sizes,
+          stock: updateProductDto.stock,
+          verification_document_url: updateProductDto.verification_document_url,
           brand_id: updateProductDto.brand_id,
           category_id: updateProductDto.category_id,
         },
@@ -79,7 +97,8 @@ export class ProductService {
     paginationQuery?: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
     try {
-      const { page, limit } = this.paginationService.getValidPaginationParams(paginationQuery);
+      const { page, limit } =
+        this.paginationService.getValidPaginationParams(paginationQuery);
       const skip = this.paginationService.calculateSkip(page, limit);
 
       const [products, total] = await Promise.all([
@@ -108,7 +127,8 @@ export class ProductService {
     paginationQuery?: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
     try {
-      const { page, limit } = this.paginationService.getValidPaginationParams(paginationQuery);
+      const { page, limit } =
+        this.paginationService.getValidPaginationParams(paginationQuery);
       const skip = this.paginationService.calculateSkip(page, limit);
 
       const [products, total] = await Promise.all([
@@ -136,7 +156,8 @@ export class ProductService {
     paginationQuery?: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
     try {
-      const { page, limit } = this.paginationService.getValidPaginationParams(paginationQuery);
+      const { page, limit } =
+        this.paginationService.getValidPaginationParams(paginationQuery);
       const skip = this.paginationService.calculateSkip(page, limit);
 
       const [products, total] = await Promise.all([
@@ -163,7 +184,8 @@ export class ProductService {
     paginationQuery?: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
     try {
-      const { page, limit } = this.paginationService.getValidPaginationParams(paginationQuery);
+      const { page, limit } =
+        this.paginationService.getValidPaginationParams(paginationQuery);
       const skip = this.paginationService.calculateSkip(page, limit);
 
       const [products, total] = await Promise.all([
@@ -213,8 +235,13 @@ export class ProductService {
     }
   }
 
-  async deleteProduct(id: string): Promise<{ message: string }> {
+  async deleteProduct(
+    id: string,
+    userId: string,
+    role: string,
+  ): Promise<{ message: string }> {
     try {
+      await this.assertCanManage(id, userId, role);
       await this.prisma.product.delete({
         where: { id },
       });
@@ -225,7 +252,7 @@ export class ProductService {
     }
   }
 
-  private mapProductToDto(product: any): ProductResponseDto {
+  private mapProductToDto(product: Product): ProductResponseDto {
     return {
       id: product.id,
       title: product.title,
@@ -234,11 +261,21 @@ export class ProductService {
       price: product.price,
       sizes: product.sizes,
       verified: product.verified,
+      verification_document_url: product.verification_document_url,
+      stock: product.stock,
       brand_id: product.brand_id,
       category_id: product.category_id,
       seller_id: product.seller_id,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
+  }
+
+  private async assertCanManage(id: string, userId: string, role: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException('Product not found');
+    if (role === 'SELLER' && product.seller_id !== userId) {
+      throw new ForbiddenException('You can only manage your own products');
+    }
   }
 }

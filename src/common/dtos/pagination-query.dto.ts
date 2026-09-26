@@ -1,14 +1,17 @@
-import { IsString, IsOptional, Matches } from 'class-validator';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class PaginationQueryDto {
   @IsOptional()
   @Type(() => Number)
-  @Matches(/^\d+$/, { message: 'page must be a positive number' })
+  @IsInt()
+  @Min(1)
   page?: number = 1;
 
   @IsOptional()
   @Type(() => Number)
-  @Matches(/^\d+$/, { message: 'limit must be a positive number' })
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number = 10;
 }

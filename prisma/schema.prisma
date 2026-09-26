@@ -4,9 +4,9 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  moduleFormat  = "cjs"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -14,22 +14,20 @@ datasource db {
 }
 
 model SitePolicy {
-  id  String @id @default(uuid())
-  type  PoliyType
-  content String
-  createdAt DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String    @id @default(uuid())
+  type      PoliyType
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  @@map("site_policies")
   @@index([id, type])
+  @@map("site_policies")
 }
-
 
 enum PoliyType {
   Privacy
   Terms
 }
-
 
 enum UserRole {
   BUYER
@@ -38,7 +36,6 @@ enum UserRole {
   ADMIN
   SUPER_ADMIN
 }
-
 
 enum NotificationLevel {
   Critical
@@ -51,4 +48,71 @@ enum NotificationChannel {
 
 enum NotificationType {
   account_created
+  order_updated
+  message_received
+  promotion_updated
+  seller_verification_updated
+  support_updated
+}
+
+enum VerificationPurpose {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+enum BusinessVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SellerDocumentType {
+  BUSINESS_LICENSE
+  TAX_CERTIFICATE
+  OWNER_ID
+}
+
+enum DocumentVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PromotionPlan {
+  STARTER
+  PREMIUM
+  PRO
+}
+
+enum PromotionStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentPurpose {
+  ORDER
+  PROMOTION
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }

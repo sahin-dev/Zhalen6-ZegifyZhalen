@@ -1,0 +1,14 @@
+model SupportTicket {
+  id             String              @id @default(uuid())
+  user_id        String
+  subject        String
+  message        String
+  status         SupportTicketStatus @default(OPEN)
+  admin_response String?
+  user           User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([user_id, status])
+  @@map("support_tickets")
+}

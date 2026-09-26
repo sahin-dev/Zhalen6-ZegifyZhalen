@@ -48,9 +48,7 @@ export class SitePolicyController {
   @Public()
   @Get(':id')
   @HttpCode(200)
-  async getPolicyById(
-    @Param('id') id: string,
-  ): Promise<SitePolicyResponseDto> {
+  async getPolicyById(@Param('id') id: string): Promise<SitePolicyResponseDto> {
     return this.sitePolicyService.getPolicyById(id);
   }
 
@@ -67,9 +65,19 @@ export class SitePolicyController {
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Delete(':id')
   @HttpCode(200)
-  async deletePolicy(
-    @Param('id') id: string,
-  ): Promise<{ message: string }> {
+  async deletePolicy(@Param('id') id: string): Promise<{ message: string }> {
     return this.sitePolicyService.deletePolicy(id);
+  }
+}
+
+@Controller('site-policy')
+export class SitePolicyCompatibilityController {
+  constructor(private readonly sitePolicyService: SitePolicyService) {}
+
+  @Public()
+  @Get(':type')
+  getPolicy(@Param('type') type: string) {
+    const normalized = type === 'PrivacyPolicy' ? 'Privacy' : type;
+    return this.sitePolicyService.getPolicyByType(normalized);
   }
 }

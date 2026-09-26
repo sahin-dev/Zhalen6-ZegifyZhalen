@@ -1,29 +1,30 @@
 model Cart {
-    id  String @id @default(uuid())
-    user_id String @unique
-    cart_items CartItem[]
+  id         String     @id @default(uuid())
+  user_id    String     @unique
+  cart_items CartItem[]
 
-    user  User @relation(references: [id], fields: [user_id], onDelete: Restrict)
+  user User @relation(references: [id], fields: [user_id], onDelete: Restrict)
 
-    createdAt  DateTime  @default(now())
-    updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@map("cart")
-    @@index([id, user_id])
+  @@index([id, user_id])
+  @@map("cart")
 }
 
 model CartItem {
-    id      String @id @default(uuid())
-    cart_id  String
-    product_id  String
-    quantity  Int 
+  id         String @id @default(uuid())
+  cart_id    String
+  product_id String
+  quantity   Int
 
-    cart Cart @relation(references: [id], fields: [cart_id], onDelete: Restrict)
-    product  Product  @relation(references:[id], fields:[product_id], onDelete: Restrict)
+  cart    Cart    @relation(references: [id], fields: [cart_id], onDelete: Restrict)
+  product Product @relation(references: [id], fields: [product_id], onDelete: Restrict)
 
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@map("cart_items")
-    @@index([id, cart_id])
+  @@unique([cart_id, product_id])
+  @@index([id, cart_id])
+  @@map("cart_items")
 }

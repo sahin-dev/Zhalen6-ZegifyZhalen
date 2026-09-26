@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { BrandService } from './brand.service';
 import { PaginationQueryDto, PaginatedResponseDto } from '../../common/dtos';
-import { Public, Roles } from '../../common/decorators';
+import { CurrentUser, Public, Roles } from '../../common/decorators';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { BrandResponseDto } from './dto/brand-response.dto';
@@ -20,10 +20,22 @@ export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 
   @Post()
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  async createBrand(@Body() createBrandDto: CreateBrandDto): Promise<BrandResponseDto> {
+  @Roles('SELLER', 'ADMIN', 'SUPER_ADMIN')
+  async createBrand(
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
+    @Body() createBrandDto: CreateBrandDto,
+  ): Promise<BrandResponseDto> {
+    return this.brandService.createBrand(
+      createBrandDto,
+      role === 'SELLER' ? userId : undefined,
+    );
+  }
 
-    return this.brandService.createBrand(createBrandDto);
+  @Get('mine')
+  @Roles('SELLER')
+  getMyBrands(@CurrentUser('sub') sellerId: string) {
+    return this.brandService.getBrandsBySeller(sellerId);
   }
 
   @Public()
@@ -40,18 +52,24 @@ export class BrandController {
     return this.brandService.getBrandById(id);
   }
 
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Roles('SELLER', 'ADMIN', 'SUPER_ADMIN')
   @Put(':id')
   async updateBrand(
     @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
     @Body() updateBrandDto: UpdateBrandDto,
   ): Promise<BrandResponseDto> {
-    return this.brandService.updateBrand(id, updateBrandDto);
+    return this.brandService.updateBrand(id, updateBrandDto, userId, role);
   }
 
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Roles('SELLER', 'ADMIN', 'SUPER_ADMIN')
   @Delete(':id')
-  async deleteBrand(@Param('id') id: string): Promise<{ message: string }> {
-    return this.brandService.deleteBrand(id);
+  async deleteBrand(
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
+  ): Promise<{ message: string }> {
+    return this.brandService.deleteBrand(id, userId, role);
   }
 }

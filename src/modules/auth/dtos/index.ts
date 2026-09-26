@@ -4,3 +4,4 @@ export { ForgetPasswordDto } from './forget-password.dto';
 export { VerifyOtpDto } from './verify-otp.dto';
 export { ResetPasswordDto } from './reset-password.dto';
 export { AuthResponseDto, UserResponseDto } from './auth-response.dto';
+export { RefreshTokenDto } from './refresh-token.dto';

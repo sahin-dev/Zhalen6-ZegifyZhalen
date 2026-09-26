@@ -1,10 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaginationService } from '../../common/services/pagination.service';
 import { PaginationQueryDto, PaginatedResponseDto } from '../../common/dtos';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { BrandResponseDto } from './dto/brand-response.dto';
+import type { Brand } from '../../../generated/prisma/client';
 
 @Injectable()
 export class BrandService {
@@ -15,12 +21,16 @@ export class BrandService {
     private paginationService: PaginationService,
   ) {}
 
-  async createBrand(createBrandDto: CreateBrandDto): Promise<BrandResponseDto> {
+  async createBrand(
+    createBrandDto: CreateBrandDto,
+    sellerId?: string,
+  ): Promise<BrandResponseDto> {
     try {
       const brand = await this.prisma.brand.create({
         data: {
           title: createBrandDto.title,
-         
+          image_url: createBrandDto.image_url,
+          seller_id: sellerId,
         },
       });
       return this.mapBrandToDto(brand);
@@ -31,11 +41,27 @@ export class BrandService {
     }
   }
 
+  async getBrandsBySeller(sellerId: string): Promise<BrandResponseDto[]> {
+    const brands = await this.prisma.brand.findMany({
+      where: { seller_id: sellerId },
+      include: { _count: { select: { products: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return brands.map((brand) => ({
+      id: brand.id,
+      title: brand.title,
+      image_url: brand.image_url,
+      seller_id: brand.seller_id,
+      productCount: brand._count.products,
+    }));
+  }
+
   async getAllBrands(
     paginationQuery?: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<BrandResponseDto>> {
     try {
-      const { page, limit } = this.paginationService.getValidPaginationParams(paginationQuery);
+      const { page, limit } =
+        this.paginationService.getValidPaginationParams(paginationQuery);
       const skip = this.paginationService.calculateSkip(page, limit);
 
       const [brands, total] = await Promise.all([
@@ -99,8 +125,11 @@ export class BrandService {
   async updateBrand(
     id: string,
     updateBrandDto: UpdateBrandDto,
+    userId: string,
+    role: string,
   ): Promise<BrandResponseDto> {
     try {
+      await this.assertCanManage(id, userId, role);
       const brand = await this.prisma.brand.update({
         where: { id },
         data: {
@@ -116,8 +145,13 @@ export class BrandService {
     }
   }
 
-  async deleteBrand(id: string): Promise<{ message: string }> {
+  async deleteBrand(
+    id: string,
+    userId: string,
+    role: string,
+  ): Promise<{ message: string }> {
     try {
+      await this.assertCanManage(id, userId, role);
       await this.prisma.brand.delete({
         where: { id },
       });
@@ -129,11 +163,20 @@ export class BrandService {
     }
   }
 
-  private mapBrandToDto(brand: any): BrandResponseDto {
+  private mapBrandToDto(brand: Brand): BrandResponseDto {
     return {
       id: brand.id,
       title: brand.title,
       image_url: brand.image_url,
+      seller_id: brand.seller_id,
     };
+  }
+
+  private async assertCanManage(id: string, userId: string, role: string) {
+    const brand = await this.prisma.brand.findUnique({ where: { id } });
+    if (!brand) throw new NotFoundException('Brand not found');
+    if (role === 'SELLER' && brand.seller_id !== userId) {
+      throw new ForbiddenException('You can only manage your own brands');
+    }
   }
 }

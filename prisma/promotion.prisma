@@ -1,0 +1,49 @@
+model PromotionSubscription {
+  id              String             @id @default(uuid())
+  seller_id       String
+  plan            PromotionPlan
+  status          PromotionStatus    @default(PENDING_PAYMENT)
+  price           Float
+  duration_months Int
+  startsAt        DateTime?
+  endsAt          DateTime?
+  seller          User               @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  products        PromotionProduct[]
+  payment         Payment?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([seller_id, status, endsAt])
+  @@map("promotion_subscriptions")
+}
+
+model PromotionProduct {
+  promotion_id String
+  product_id   String
+  promotion    PromotionSubscription @relation(fields: [promotion_id], references: [id], onDelete: Cascade)
+  product      Product               @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@id([promotion_id, product_id])
+  @@map("promotion_products")
+}
+
+model Payment {
+  id                  String                 @id @default(uuid())
+  user_id             String
+  purpose             PaymentPurpose
+  status              PaymentStatus          @default(PENDING)
+  amount              Float
+  currency            String                 @default("usd")
+  provider            String                 @default("stripe")
+  provider_payment_id String?                @unique
+  order_id            String?                @unique
+  promotion_id        String?                @unique
+  user                User                   @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  order               Order?                 @relation(fields: [order_id], references: [id], onDelete: Restrict)
+  promotion           PromotionSubscription? @relation(fields: [promotion_id], references: [id], onDelete: Restrict)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  @@index([user_id, status])
+  @@map("payments")
+}

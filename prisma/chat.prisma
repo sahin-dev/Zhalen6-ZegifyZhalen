@@ -1,0 +1,31 @@
+model Conversation {
+  id            String    @id @default(uuid())
+  buyer_id      String
+  seller_id     String
+  buyer         User      @relation("BuyerConversations", fields: [buyer_id], references: [id], onDelete: Cascade)
+  seller        User      @relation("SellerConversations", fields: [seller_id], references: [id], onDelete: Cascade)
+  messages      Message[]
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([buyer_id, seller_id])
+  @@index([buyer_id, lastMessageAt])
+  @@index([seller_id, lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id              String       @id @default(uuid())
+  conversation_id String
+  sender_id       String
+  text            String
+  readAt          DateTime?
+  conversation    Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender          User         @relation("MessageSender", fields: [sender_id], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+
+  @@index([conversation_id, createdAt])
+  @@index([sender_id])
+  @@map("messages")
+}

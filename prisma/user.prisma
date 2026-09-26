@@ -1,36 +1,89 @@
-
-enum SellerDocumentType {
-    Business_License
-}
-
 model User {
-    id String @id @default(uuid())
-    full_name  String
-    avatar_url  String?
-    email      String @unique
-    phone      String @unique
-    address    String?
-    hashed_password   String 
-    is_blocked      Boolean @default(false)
+  id              String    @id @default(uuid())
+  full_name       String
+  avatar_url      String?
+  email           String    @unique
+  phone           String    @unique
+  address         String?
+  hashed_password String
+  is_blocked      Boolean   @default(false)
+  email_verified  Boolean   @default(false)
+  deletedAt       DateTime?
 
-    products        Product[]
-    orders          Order[]
-    cart           Cart?
-    notifications Notification[]
+  products                Product[]
+  orders                  Order[]
+  cart                    Cart?
+  notifications           Notification[]
+  brands                  Brand[]                 @relation("SellerBrands")
+  seller_documents        SellerDocument[]
+  business_profile        BusinessProfile?
+  buyer_conversations     Conversation[]          @relation("BuyerConversations")
+  seller_conversations    Conversation[]          @relation("SellerConversations")
+  sent_messages           Message[]               @relation("MessageSender")
+  promotion_subscriptions PromotionSubscription[]
+  support_tickets         SupportTicket[]
+  payments                Payment[]
+  refund_requests         RefundRequest[]
+  verification_codes      VerificationCode[]
 
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    role    UserRole  @default(BUYER)
+  role UserRole @default(BUYER)
 
-
-    @@map("users")
-    @@index([id, email])
+  @@index([id, email])
+  @@map("users")
 }
-
-
 
 model SellerDocument {
-    id  String @id  @default(uuid())
-    type SellerDocumentType
+  id               String                     @id @default(uuid())
+  type             SellerDocumentType
+  file_url         String
+  status           DocumentVerificationStatus @default(PENDING)
+  rejection_reason String?
+  seller_id        String
+  seller           User                       @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@index([seller_id, status])
+  @@map("seller_documents")
+}
+
+model BusinessProfile {
+  id                  String                     @id @default(uuid())
+  seller_id           String                     @unique
+  business_name       String
+  category            String
+  registration_number String
+  tax_number          String?
+  business_email      String
+  business_phone      String
+  business_address    String
+  city                String
+  zip_code            String
+  website_url         String?
+  description         String?
+  status              BusinessVerificationStatus @default(PENDING)
+  rejection_reason    String?
+  seller              User                       @relation(fields: [seller_id], references: [id], onDelete: Cascade)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+
+  @@index([status])
+  @@map("business_profiles")
+}
+
+model VerificationCode {
+  id         String              @id @default(uuid())
+  user_id    String
+  purpose    VerificationPurpose
+  code_hash  String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime            @default(now())
+  user       User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, purpose, expiresAt])
+  @@map("verification_codes")
 }

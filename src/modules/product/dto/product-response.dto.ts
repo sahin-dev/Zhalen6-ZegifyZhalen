@@ -6,6 +6,8 @@ export class ProductResponseDto {
   price: number;
   sizes: string;
   verified: boolean;
+  verification_document_url?: string | null;
+  stock: number;
   brand_id: string;
   category_id: string;
   seller_id: string;

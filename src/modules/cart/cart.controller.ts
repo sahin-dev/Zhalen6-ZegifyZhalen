@@ -1,53 +1,50 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
-import { CartService } from './cart.service';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import { CurrentUser, Roles } from '../../common/decorators';
 import { AddToCartDto, UpdateCartItemDto } from './dto/add-to-cart.dto';
-import { CartResponseDto, CartItemResponseDto } from './dto/cart-response.dto';
-import { PaginationQueryDto, PaginatedResponseDto } from '../../common/dtos';
-import { Public } from '../../common/decorators';
+import { CartService } from './cart.service';
 
-@Controller('carts')
+@Controller('cart')
+@Roles('BUYER')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
-  @Post()
-  async createCart(@Body() body: { user_id: string }): Promise<CartResponseDto> {
-    return this.cartService.createCart(body.user_id);
+  @Get()
+  getCart(@CurrentUser('sub') userId: string) {
+    return this.cartService.getCart(userId);
   }
 
-  @Get(':user_id')
-  async getCartByUserId(@Param('user_id') user_id: string): Promise<CartResponseDto> {
-    return this.cartService.getCartByUserId(user_id);
+  @Post('items')
+  addItem(@CurrentUser('sub') userId: string, @Body() dto: AddToCartDto) {
+    return this.cartService.addItem(userId, dto);
   }
 
-  @Post('items/add')
-  async addToCart(@Body() addToCartDto: AddToCartDto): Promise<CartItemResponseDto> {
-    return this.cartService.addToCart(addToCartDto);
+  @Patch('items/:itemId')
+  updateItem(
+    @CurrentUser('sub') userId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateCartItemDto,
+  ) {
+    return this.cartService.updateItem(userId, itemId, dto.quantity);
   }
 
-  @Public()
-  @Get('items/:cart_id')
-  async getCartItems(
-    @Param('cart_id') cart_id: string,
-    @Query() paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<CartItemResponseDto>> {
-    return this.cartService.getCartItems(cart_id, paginationQuery);
+  @Delete('items/:itemId')
+  removeItem(
+    @CurrentUser('sub') userId: string,
+    @Param('itemId') itemId: string,
+  ) {
+    return this.cartService.removeItem(userId, itemId);
   }
 
-  @Put('items/:id')
-  async updateCartItem(
-    @Param('id') id: string,
-    @Body() updateCartItemDto: UpdateCartItemDto,
-  ): Promise<CartItemResponseDto> {
-    return this.cartService.updateCartItem(id, updateCartItemDto);
-  }
-
-  @Delete('items/:id')
-  async removeFromCart(@Param('id') id: string): Promise<{ message: string }> {
-    return this.cartService.removeFromCart(id);
-  }
-
-  @Delete(':cart_id/clear')
-  async clearCart(@Param('cart_id') cart_id: string): Promise<{ message: string }> {
-    return this.cartService.clearCart(cart_id);
+  @Delete()
+  clear(@CurrentUser('sub') userId: string) {
+    return this.cartService.clear(userId);
   }
 }

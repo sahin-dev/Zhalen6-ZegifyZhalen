@@ -1,23 +1,45 @@
-export class CreateOrderDto {
-  user_id: string;
-  items: CreateOrderItemDto[];
-}
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
-export class CreateOrderItemDto {
-  product_id: string;
-  item_quantity: number;
-  item_unit_price: number;
+export class CreateOrderDto {
+  @IsString()
+  delivery_address: string;
 }
 
 export class UpdateOrderStatusDto {
-  status: 'pending' | 'accepted' | 'cancelled' | 'waiting_for_admin_approval' | 'approved' | 'rejected' | 'completed';
-}
-
-export class ApproveOrderDto {
-  admin_id: string;
+  @IsIn([
+    'pending',
+    'accepted',
+    'cancelled',
+    'waiting_for_admin_approval',
+    'approved',
+    'rejected',
+    'completed',
+  ])
+  status:
+    | 'pending'
+    | 'accepted'
+    | 'cancelled'
+    | 'waiting_for_admin_approval'
+    | 'approved'
+    | 'rejected'
+    | 'completed';
 }
 
 export class RejectOrderDto {
-  admin_id: string;
-  reason?: string;
+  @IsString()
+  reason: string;
+}
+
+export class CreateRefundDto {
+  @IsString()
+  reason: string;
+}
+
+export class ReviewRefundDto {
+  @IsIn(['APPROVED', 'REJECTED', 'COMPLETED'])
+  status: 'APPROVED' | 'REJECTED' | 'COMPLETED';
+
+  @IsOptional()
+  @IsString()
+  admin_note?: string;
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Param } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from '../../common/decorators';
 import {
@@ -8,6 +8,7 @@ import {
   VerifyOtpDto,
   ResetPasswordDto,
   AuthResponseDto,
+  RefreshTokenDto,
 } from './dtos';
 
 @Controller('auth')
@@ -30,7 +31,7 @@ export class AuthController {
    * POST /auth/sign-in
    */
   @Public()
-  @Post('sign-in')
+  @Post(['sign-in', 'signin'])
   @HttpCode(HttpStatus.OK)
   async signIn(@Body() signInDto: SignInDto): Promise<AuthResponseDto> {
     return this.authService.signIn(signInDto);
@@ -68,5 +69,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() body: { email: string } & ResetPasswordDto) {
     return this.authService.resetPassword(body.email, body);
+  }
+
+  @Public()
+  @Post('resend-reset-code')
+  @HttpCode(HttpStatus.OK)
+  resendResetCode(@Body() dto: ForgetPasswordDto) {
+    return this.authService.forgetPassword(dto);
+  }
+
+  @Public()
+  @Post('refresh-token')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refresh(dto.refresh_token);
   }
 }

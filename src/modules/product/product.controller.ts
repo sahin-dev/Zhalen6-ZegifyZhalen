@@ -1,7 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ProductService } from './product.service';
 import { PaginationQueryDto, PaginatedResponseDto } from '../../common/dtos';
-import { Public } from '../../common/decorators';
+import { CurrentUser, Public, Roles } from '../../common/decorators';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
@@ -11,9 +20,21 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  async createProduct(@Body() createProductDto: CreateProductDto): Promise<ProductResponseDto> {
-    console.log(createProductDto)
-    return this.productService.createProduct(createProductDto);
+  @Roles('SELLER')
+  async createProduct(
+    @CurrentUser('sub') sellerId: string,
+    @Body() createProductDto: CreateProductDto,
+  ): Promise<ProductResponseDto> {
+    return this.productService.createProduct(sellerId, createProductDto);
+  }
+
+  @Get('mine')
+  @Roles('SELLER')
+  getMine(
+    @CurrentUser('sub') sellerId: string,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return this.productService.getProductsBySeller(sellerId, paginationQuery);
   }
 
   @Public()
@@ -47,7 +68,10 @@ export class ProductController {
     @Param('category_id') category_id: string,
     @Query() paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ProductResponseDto>> {
-    return this.productService.getProductsByCategory(category_id, paginationQuery);
+    return this.productService.getProductsByCategory(
+      category_id,
+      paginationQuery,
+    );
   }
 
   @Public()
@@ -57,25 +81,40 @@ export class ProductController {
   }
 
   @Put(':id')
+  @Roles('SELLER', 'ADMIN', 'SUPER_ADMIN')
   async updateProduct(
     @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
     @Body() updateProductDto: UpdateProductDto,
   ): Promise<ProductResponseDto> {
-    return this.productService.updateProduct(id, updateProductDto);
+    return this.productService.updateProduct(
+      id,
+      updateProductDto,
+      userId,
+      role,
+    );
   }
 
   @Post(':id/approve')
+  @Roles('CHECKER', 'ADMIN', 'SUPER_ADMIN')
   async approveProduct(@Param('id') id: string): Promise<ProductResponseDto> {
     return this.productService.approveProduct(id);
   }
 
   @Post(':id/reject')
+  @Roles('CHECKER', 'ADMIN', 'SUPER_ADMIN')
   async rejectProduct(@Param('id') id: string): Promise<ProductResponseDto> {
     return this.productService.rejectProduct(id);
   }
 
   @Delete(':id')
-  async deleteProduct(@Param('id') id: string): Promise<{ message: string }> {
-    return this.productService.deleteProduct(id);
+  @Roles('SELLER', 'ADMIN', 'SUPER_ADMIN')
+  async deleteProduct(
+    @Param('id') id: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: string,
+  ): Promise<{ message: string }> {
+    return this.productService.deleteProduct(id, userId, role);
   }
 }

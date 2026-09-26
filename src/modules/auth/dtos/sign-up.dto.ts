@@ -1,7 +1,13 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsPhoneNumber } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsOptional,
+  Matches,
+  IsIn,
+} from 'class-validator';
 
 export class SignUpDto {
-    
   @IsString()
   @MinLength(2)
   full_name: string;
@@ -9,12 +15,22 @@ export class SignUpDto {
   @IsEmail()
   email: string;
 
-  @IsPhoneNumber('US')
+  @Matches(/^\+?[1-9]\d{6,14}$/, {
+    message: 'phone must be a valid international phone number',
+  })
   phone: string;
 
   @IsString()
   @MinLength(8)
   password: string;
+
+  @IsOptional()
+  @IsString()
+  confirm_password?: string;
+
+  @IsOptional()
+  @IsIn(['BUYER', 'SELLER'])
+  role?: 'BUYER' | 'SELLER';
 
   @IsOptional()
   @IsString()

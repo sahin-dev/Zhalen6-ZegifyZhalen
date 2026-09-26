@@ -1,5 +1,3 @@
-
-
 enum OrderStatus {
   pending
   accepted
@@ -8,55 +6,75 @@ enum OrderStatus {
   approved
   rejected
   completed
-
 }
 
-
 model Order {
-    id String @id @default(uuid())
-    user_id  String
-    status OrderStatus @default(pending)
-    total  Float
+  id               String      @id @default(uuid())
+  user_id          String
+  status           OrderStatus @default(pending)
+  total            Float
+  delivery_fee     Float       @default(0)
+  delivery_address String?
 
-    user  User @relation(references: [id], fields: [user_id], onDelete: Restrict)
+  user User @relation(references: [id], fields: [user_id], onDelete: Restrict)
 
-    items  OrderItem[]
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+  items     OrderItem[]
+  logs      OrderLog[]
+  payment   Payment?
+  refund    RefundRequest?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
-    @@map("orders")
-    @@index([id,user_id])
+  @@index([id, user_id])
+  @@map("orders")
 }
 
 model OrderItem {
+  id                   String   @id @default(uuid())
+  order_id             String
+  item_image_urls      String[]
+  item_title           String
+  item_category_name   String
+  item_available_sizes String
+  item_unit_price      Float
+  item_quantity        String
+  product_id           String?
+  seller_id            String?
 
-    id  String @id @default(uuid())
-    order_id String
-    item_image_urls  String[]
-    item_title String
-    item_category_name String
-    item_available_sizes  String
-    item_unit_price  Float
-    item_quantity  String
+  order     Order    @relation(references: [id], fields: [order_id], onDelete: Restrict)
+  product   Product? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    order  Order @relation(references: [id], fields: [order_id], onDelete:Restrict)
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
-
-    @@map("order_items")
-    @@index([id, order_id])
-
+  @@index([id, order_id, seller_id])
+  @@map("order_items")
 }
 
 model OrderLog {
-    id  String  @id  @default(uuid())
-    order_id  String
-    title String
+  id       String @id @default(uuid())
+  order_id String
+  title    String
+  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@map("order_logs")
-    @@index([id, order_id])
+  @@index([id, order_id])
+  @@map("order_logs")
+}
 
+model RefundRequest {
+  id         String       @id @default(uuid())
+  order_id   String       @unique
+  user_id    String
+  reason     String
+  status     RefundStatus @default(REQUESTED)
+  admin_note String?
+  order      Order        @relation(fields: [order_id], references: [id], onDelete: Restrict)
+  user       User         @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([user_id, status])
+  @@map("refund_requests")
 }
